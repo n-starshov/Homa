@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.tvOS;
 
 public class Tower : MonoBehaviour
 {
@@ -48,7 +49,9 @@ public class Tower : MonoBehaviour
             for (int i = 0; i < TileCountPerFloor; i++) {
                 Quaternion direction = Quaternion.AngleAxis(angleStep * i, Vector3.up) * floorRotation;
                 Vector3 position = transform.position + Vector3.up * y * TileHeight + direction * Vector3.forward * towerRadius;
-                TowerTile tileInstance = Instantiate(Random.value > SpecialTileChance ? TilePrefab : SpecialTilePrefabs[Random.Range(0, SpecialTilePrefabs.Length)], position, direction * TilePrefab.transform.rotation, transform);
+                
+                var tilePrefab = GetTowerTilePrefab();
+                TowerTile tileInstance = Instantiate(tilePrefab, position, direction * TilePrefab.transform.rotation, transform);
                 tileInstance.SetColorIndex(Mathf.FloorToInt(Random.value * TileColorManager.Instance.ColorCount));
                 tileInstance.SetFreezed(true);
                 tileInstance.Floor = y;
@@ -64,6 +67,19 @@ public class Tower : MonoBehaviour
         for (int i = 1; i < PlayableFloors; i++) {
             SetFloorActive(currentFloor + i, true);
         }
+    }
+
+    private TowerTile GetTowerTilePrefab()
+    {
+        var tilePrefab = TilePrefab;
+        if (RemoteConfig.BOOL_EXPLOSIVE_BARRELS_ENABLED
+            && Random.value > SpecialTileChance
+            && SaveData.CurrentLevel > RemoteConfig.INT_EXPLOSIVE_BARRELS_MIN_LEVEL)
+        {
+            tilePrefab = SpecialTilePrefabs[Random.Range(0, SpecialTilePrefabs.Length)];
+        }
+
+        return tilePrefab;
     }
 
     public void OnTileDestroyed(TowerTile tile)
